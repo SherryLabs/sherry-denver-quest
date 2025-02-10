@@ -1,0 +1,33 @@
+{
+  "name": "hardhat-poap-verifier",
+  "version": "1.0.0",
+  "main": "index.js",
+  "dependencies": {
+    "append": "^0.1.1",
+    "async": "^0.1.22",
+    "consolidate": "^0.3.1",
+    "dive": "^0.2.0",
+    "fs-extra": "^0.1.3",
+    "mkdirp": "^0.3.5",
+    "ncp": "^0.2.7",
+    "rimraf": "^1.0.9"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ignition": "^0.15.9",
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "@nomicfoundation/hardhat-verify": "^2.0.12",
+    "@openzeppelin/contracts": "^5.2.0",
+    "dotenv": "^16.4.7",
+    "hardhat": "^2.22.18"
+  },
+  "scripts": {
+    "deploy:mockpoap": "npx hardhat ignition deploy ignition/modules/MockPoapModule.js",
+    "deploy:poapverifier": "npx hardhat ignition deploy ignition/modules/PoapVerifierModule.js",
+    "mint:poaps": "npx hardhat ignition deploy ignition/modules/PoapMintModule.js",
+    "test": "forge test -vvv"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}

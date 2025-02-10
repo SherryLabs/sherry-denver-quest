@@ -1,0 +1,32 @@
+# Node modules
+/node_modules/
+
+# Hardhat artifacts and cache
+/artifacts/
+/cache/
+
+# Hardhat deployments
+/deployments/
+
+# Hardhat temporary files
+/.env
+/.vscode/
+
+# Foundry artifacts and cache
+/lib/
+/out/
+/forge-out/
+/artifacts/
+
+# Foundry generated files
+/.foundry/
+
+# Logs
+*.log
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.swp

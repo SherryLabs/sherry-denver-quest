@@ -1,0 +1,1 @@
+npx hardhat verify --network alfajores --constructor-args args.js 0x507CAc9Ba1d044e133EEeB2bfF7E77766AaEf350
