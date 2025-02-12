@@ -1,0 +1,27 @@
+{
+  "name": "sherrylinks-express",
+  "version": "1.0.0",
+  "description": "Mini-app example with express",
+  "main": "server.ts",
+  "author": "Gilberts Ahumada",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsc",
+    "dev": "./node_modules/nodemon/bin/nodemon.js ./server.ts",
+    "start": "node ./build/server.js"
+  },
+  "dependencies": {
+    "@sherrylinks/sdk": "^0.16.0-alpha.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "nodemon": "^3.1.7"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.1",
+    "dotenv": "^16.4.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.2"
+  }
+}

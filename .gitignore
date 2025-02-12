@@ -31,4 +31,6 @@ Thumbs.db
 # Temporary files
 *.swp
 
+/ignition/deployments/
+
 poapVerifierArgs.js
