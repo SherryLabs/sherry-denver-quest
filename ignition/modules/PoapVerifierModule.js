@@ -28,18 +28,17 @@ module.exports = buildModule("PoapVerifierModule", (m) => {
     }
   }
 
-  if (!process.env.POAPS_IDS) {
-    throw new Error("POAPS_IDS is not defined in the environment variables");
+  if (!process.env.POAP_ID) {
+    throw new Error("POAP_ID is not defined in the environment variables");
   }
 
-  const requiredPoapIds = process.env.POAPS_IDS?.split(",").map(Number) || [];
   const poapVerifier = m.contract("POAPVerifier", [
-    requiredPoapIds,
+    process.env.POAP_ID,
     poapContractAddress,
   ]);
 
   const content = `module.exports = [
-    [${requiredPoapIds}],
+    [${process.env.POAP_ID}],
     "${poapContractAddress}",
   ];`;
 
