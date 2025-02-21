@@ -13,11 +13,17 @@ interface IPOAP {
 contract POAPVerifier is Ownable {
     address public poapContract;
     uint256 public poapId;
+    bool public registrationFinished;
 
     mapping(address => bool) public verifiedUsers;
     address[] public verifiedUserList;
 
     event UserVerified(address indexed user);
+
+    modifier onlyIfNotFinished() {
+        require(!registrationFinished, "Registration has already ended");
+        _;
+    }
 
     constructor(uint256 _poapId, address _poapContract) Ownable(msg.sender) {
         poapContract = _poapContract;
@@ -28,7 +34,7 @@ contract POAPVerifier is Ownable {
      * @dev Checks if a user holds the required POAP and registers them.
      * @param _user The address of the user to verify.
      */
-    function checkAndRegister(address _user) public {
+    function checkAndRegister(address _user) public onlyIfNotFinished {
         require(!verifiedUsers[_user], "User already verified");
         require(
             checkEligibility(_user),
