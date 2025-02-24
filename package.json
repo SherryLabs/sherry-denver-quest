@@ -13,7 +13,6 @@
     "rimraf": "^1.0.9"
   },
   "devDependencies": {
-    "@chainlink/contracts": "^1.3.0",
     "@nomicfoundation/hardhat-ignition": "^0.15.9",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@nomicfoundation/hardhat-verify": "^2.0.12",
