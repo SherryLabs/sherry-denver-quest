@@ -115,7 +115,6 @@ contract RaffleTest is Test {
 
         address[] memory verifiedUserList = poapVerifier.getVerifiedUsers();
         address[5] memory winners = raffle.getWinners();
-        address[5] memory winnersAddresses = raffle.getWinners();
 
         for (uint i = 0; i < 5; i++) {
             // Ensure that the winners indexes exists in poapverifier contract and match
@@ -148,7 +147,7 @@ contract RaffleTest is Test {
     function isValidVerifiedUser(
         address winner,
         address[] memory verifiedUserList
-    ) internal view returns (bool) {
+    ) internal pure returns (bool) {
         for (uint i = 0; i < verifiedUserList.length; i++) {
             if (verifiedUserList[i] == winner) {
                 return true;
