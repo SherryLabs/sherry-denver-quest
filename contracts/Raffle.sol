@@ -78,8 +78,14 @@ contract Raffle {
     /**
      * @dev Returns the selected winners' addresses.
      */
+    function getWinnersIndexes() public view returns (uint16[5] memory) {
+        return winners;
+    }
+
+    /**
+     * @dev Returns the selected winners' addresses.
+     */
     function getWinners() public view returns (address[5] memory) {
-        require(raffleCompleted, "Raffle not completed yet");
         return winnerAddresses;
     }
 }

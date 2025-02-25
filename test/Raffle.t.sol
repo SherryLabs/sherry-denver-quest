@@ -10,6 +10,8 @@ contract RaffleTest is Test {
     Raffle raffle;
     IPOAPMock poapMock;
     POAPVerifier poapVerifier;
+    IPOAPMock smallPoapMock;
+    POAPVerifier smallPoapVerifier;
     address user1 = address(0x1);
     address user2 = address(0x2);
     address user3 = address(0x3);
@@ -43,33 +45,58 @@ contract RaffleTest is Test {
         raffle = new Raffle(address(poapVerifier));
     }
 
+    function setupTestConstructor() internal {
+        // Create POAPVerifier with less than 6 users to test constructor required
+        smallPoapMock = new IPOAPMock();
+        smallPoapVerifier = new POAPVerifier(2, address(smallPoapMock));
+        smallPoapMock.setBalance(user1, 2, 1);
+        smallPoapVerifier.checkAndRegister(user1);
+        smallPoapMock.setBalance(user2, 2, 1);
+        smallPoapVerifier.checkAndRegister(user2);
+    }
+
+    function testRegistrationNotFinished() public {
+        // test constructor require
+        setupTestConstructor();
+
+        vm.expectRevert("Registration is not finished");
+        new Raffle(address(smallPoapVerifier));
+    }
+
+    function testNotEnoughUsers() public {
+        // test constructor require
+        setupTestConstructor();
+
+        smallPoapVerifier.finishRegistration();
+
+        vm.expectRevert("Users out of range");
+        new Raffle(address(smallPoapVerifier));
+    }
+
     function testInitialState() public view {
-        // Verify that the totalUsers is set correctly
+        // Verify global variable is set correctly
         assertEq(raffle.totalUsers(), 6, "Total users should be 6");
+
+        uint16[5] memory winners = raffle.getWinnersIndexes();
+        assertEq(winners[0], 0, "Winners indexes should be not assigned yet");
+
+        address[5] memory winnersAddresses = raffle.getWinners();
+        assertEq(
+            winnersAddresses[0],
+            address(0),
+            "Winners addresses should be not assigned yet"
+        );
+
+        POAPVerifier poapver = raffle.poapVerifier();
+        assertFalse(
+            address(poapver) != address(poapVerifier),
+            "POAPVerifier not matching"
+        );
+
         assertFalse(
             raffle.raffleCompleted(),
             "Raffle should not be completed initially"
         );
-    }
-
-    function testPickWinners() public {
-        raffle.pickWinners();
-
-        // Check that the raffle has been completed
-        assertTrue(raffle.raffleCompleted(), "Raffle should be completed");
-
-        // Check that winners are selected
-        address[5] memory winners = raffle.getWinners();
-        for (uint i = 0; i < 5; i++) {
-            assertTrue(isValidWinner(winners[i]), "Invalid winner address");
-        }
-
-        // Ensure that the winners are unique
-        for (uint i = 0; i < 5; i++) {
-            for (uint j = i + 1; j < 5; j++) {
-                assertNotEq(winners[i], winners[j], "Winners should be unique");
-            }
-        }
     }
 
     function testCannotPickWinnersTwice() public {
@@ -80,52 +107,50 @@ contract RaffleTest is Test {
         raffle.pickWinners();
     }
 
-    function testRegistrationNotFinished() public {
-        // Create POAPVerifier with less than 6 users
-        IPOAPMock smallPoapMock = new IPOAPMock();
-        POAPVerifier smallPoapVerifier = new POAPVerifier(
-            2,
-            address(smallPoapMock)
-        );
-        smallPoapMock.setBalance(user1, 2, 1);
-        smallPoapVerifier.checkAndRegister(user1);
-        smallPoapMock.setBalance(user2, 2, 1);
-        smallPoapVerifier.checkAndRegister(user2);
+    function testPickWinners() public {
+        raffle.pickWinners();
 
-        // Create Raffle contract with less than 6 users
-        vm.expectRevert("Registration is not finished");
-        new Raffle(address(smallPoapVerifier));
-    }
+        // Check that the raffle has been completed
+        assertTrue(raffle.raffleCompleted(), "Raffle should be completed");
 
-    function testNotEnoughUsers() public {
-        // Create POAPVerifier with less than 6 users
-        IPOAPMock smallPoapMock = new IPOAPMock();
-        POAPVerifier smallPoapVerifier = new POAPVerifier(
-            2,
-            address(smallPoapMock)
-        );
-        smallPoapMock.setBalance(user1, 2, 1);
-        smallPoapVerifier.checkAndRegister(user1);
-        smallPoapMock.setBalance(user2, 2, 1);
-        smallPoapVerifier.checkAndRegister(user2);
+        address[] memory verifiedUserList = poapVerifier.getVerifiedUsers();
+        address[5] memory winners = raffle.getWinners();
+        address[5] memory winnersAddresses = raffle.getWinners();
 
-        smallPoapVerifier.finishRegistration();
+        for (uint i = 0; i < 5; i++) {
+            // Ensure that the winners indexes exists in poapverifier contract and match
+            assertTrue(isValidWinner(winners[i]), "Invalid winner address");
 
-        // Create Raffle contract with less than 6 users
-        vm.expectRevert("Users out of range");
-        new Raffle(address(smallPoapVerifier));
-    }
+            // Ensure that the winners are unique
+            for (uint j = i + 1; j < 5; j++) {
+                assertNotEq(winners[i], winners[j], "Winners should be unique");
+            }
 
-    function testCannotPickWinnersBeforeCompletion() public {
-        // Ensure winners cannot be retrieved before the raffle is completed
-        vm.expectRevert("Raffle not completed yet");
-        raffle.getWinners();
+            // Ensure that the winners addresses match in poapverifier contract verified user list
+            assertTrue(
+                isValidVerifiedUser(winners[i], verifiedUserList),
+                "User address is not a winner"
+            );
+        }
     }
 
     // Helper function to validate winner address
     function isValidWinner(address winner) internal view returns (bool) {
         for (uint i = 0; i < users.length; i++) {
             if (users[i] == winner) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Helper function to validate winner address
+    function isValidVerifiedUser(
+        address winner,
+        address[] memory verifiedUserList
+    ) internal view returns (bool) {
+        for (uint i = 0; i < verifiedUserList.length; i++) {
+            if (verifiedUserList[i] == winner) {
                 return true;
             }
         }
