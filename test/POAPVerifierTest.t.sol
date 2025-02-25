@@ -3,24 +3,10 @@ pragma solidity 0.8.28;
 
 import "forge-std/Test.sol";
 import "../contracts/POAPVerifier.sol";
-
-contract POAPMock {
-    mapping(address => mapping(uint256 => uint256)) public balances;
-
-    function setBalance(address user, uint256 id, uint256 amount) public {
-        balances[user][id] = amount;
-    }
-
-    function balanceOf(
-        address account,
-        uint256 id
-    ) external view returns (uint256) {
-        return balances[account][id];
-    }
-}
+import "../contracts/mock/IPOAPMock.sol";
 
 contract POAPVerifierTest is Test {
-    POAPMock poapMock;
+    IPOAPMock poapMock;
     POAPVerifier poapVerifier;
     address user1 = address(0x1);
     address user2 = address(0x2);
@@ -28,7 +14,7 @@ contract POAPVerifierTest is Test {
     event UserVerified(address indexed user);
 
     function setUp() public {
-        poapMock = new POAPMock();
+        poapMock = new IPOAPMock();
         poapVerifier = new POAPVerifier(testPoapId, address(poapMock));
     }
 

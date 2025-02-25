@@ -2,90 +2,133 @@
 pragma solidity ^0.8.28;
 
 import "forge-std/Test.sol";
-import "../contracts/Raffle.sol"; // Assume your Raffle contract is in the src folder
+import "../contracts/Raffle.sol";
+import "../contracts/POAPVerifier.sol";
+import "../contracts/mock/IPOAPMock.sol";
 
 contract RaffleTest is Test {
     Raffle raffle;
-    uint16 totalUsers;
+    IPOAPMock poapMock;
+    POAPVerifier poapVerifier;
+    address user1 = address(0x1);
+    address user2 = address(0x2);
+    address user3 = address(0x3);
+    address user4 = address(0x4);
+    address user5 = address(0x5);
+    address user6 = address(0x6);
+    address[] users;
+    address owner = address(0x666);
 
-    // Test with 6 users
-    function setUpForSix() public {
-        totalUsers = 6;
-        raffle = new Raffle(totalUsers); // Deploy the contract with 6 users
-    }
+    function setUp() public {
+        // Create POAPVerifier contract
+        poapMock = new IPOAPMock();
+        poapVerifier = new POAPVerifier(1, address(poapMock));
 
-    // Test with 10 users
-    function setUpForTen() public {
-        totalUsers = 10;
-        raffle = new Raffle(totalUsers); // Deploy the contract with 10 users
-    }
+        // Register users in POAPVerifier
+        users.push(user1);
+        users.push(user2);
+        users.push(user3);
+        users.push(user4);
+        users.push(user5);
+        users.push(user6);
 
-    // Test with 300 users
-    function setUpForThreeHundred() public {
-        totalUsers = 300;
-        raffle = new Raffle(totalUsers); // Deploy the contract with 300 users
-    }
-
-    // Verify that the raffle can be executed correctly (6 users)
-    function testPickWinnersSix() public {
-        setUpForSix();
-        raffle.pickWinners();
-
-        uint16[5] memory winners = raffle.getWinners();
-
-        // Verify that all winners are distinct
-        for (uint i = 0; i < 5; i++) {
-            for (uint j = i + 1; j < 5; j++) {
-                assertNotEq(winners[i], winners[j], "Winner indexes should not be the same");
-            }
+        for (uint i = 0; i < users.length; i++) {
+            poapMock.setBalance(users[i], 1, 1);
+            poapVerifier.checkAndRegister(users[i]);
         }
 
-        // Verify that the raffle has been completed
-        assertEq(raffle.raffleCompleted(), true, "Raffle should be completed after picking winners");
+        poapVerifier.finishRegistration();
+
+        // Create Raffle contract
+        raffle = new Raffle(address(poapVerifier));
     }
 
-    // Verify that the raffle can be executed correctly (10 users)
-    function testPickWinnersTen() public {
-        setUpForTen();
+    function testInitialState() public view {
+        // Verify that the totalUsers is set correctly
+        assertEq(raffle.totalUsers(), 6, "Total users should be 6");
+        assertFalse(
+            raffle.raffleCompleted(),
+            "Raffle should not be completed initially"
+        );
+    }
+
+    function testPickWinners() public {
         raffle.pickWinners();
 
-        uint16[5] memory winners = raffle.getWinners();
+        // Check that the raffle has been completed
+        assertTrue(raffle.raffleCompleted(), "Raffle should be completed");
 
-        // Verify that all winners are distinct
+        // Check that winners are selected
+        address[5] memory winners = raffle.getWinners();
         for (uint i = 0; i < 5; i++) {
-            for (uint j = i + 1; j < 5; j++) {
-                assertNotEq(winners[i], winners[j], "Winner indexes should not be the same");
-            }
+            assertTrue(isValidWinner(winners[i]), "Invalid winner address");
         }
 
-        // Verify that the raffle has been completed
-        assertEq(raffle.raffleCompleted(), true, "Raffle should be completed after picking winners");
-    }
-
-    // Verify that the raffle can be executed correctly (300 users)
-    function testPickWinnersThreeHundred() public {
-        setUpForThreeHundred();
-        raffle.pickWinners();
-
-        uint16[5] memory winners = raffle.getWinners();
-
-        // Verify that all winners are distinct
+        // Ensure that the winners are unique
         for (uint i = 0; i < 5; i++) {
             for (uint j = i + 1; j < 5; j++) {
-                assertNotEq(winners[i], winners[j], "Winner indexes should not be the same");
+                assertNotEq(winners[i], winners[j], "Winners should be unique");
             }
         }
-
-        // Verify that the raffle has been completed
-        assertEq(raffle.raffleCompleted(), true, "Raffle should be completed after picking winners");
     }
 
-    // Verify that the raffle cannot be executed more than once (6 users)
-    function testRaffleAlreadyCompleted() public {
-        setUpForSix();
+    function testCannotPickWinnersTwice() public {
         raffle.pickWinners();
 
+        // Try to pick winners again and expect an error
         vm.expectRevert("Raffle already completed");
-        raffle.pickWinners(); // This should revert, as the raffle has already been completed
+        raffle.pickWinners();
+    }
+
+    function testRegistrationNotFinished() public {
+        // Create POAPVerifier with less than 6 users
+        IPOAPMock smallPoapMock = new IPOAPMock();
+        POAPVerifier smallPoapVerifier = new POAPVerifier(
+            2,
+            address(smallPoapMock)
+        );
+        smallPoapMock.setBalance(user1, 2, 1);
+        smallPoapVerifier.checkAndRegister(user1);
+        smallPoapMock.setBalance(user2, 2, 1);
+        smallPoapVerifier.checkAndRegister(user2);
+
+        // Create Raffle contract with less than 6 users
+        vm.expectRevert("Registration is not finished");
+        new Raffle(address(smallPoapVerifier));
+    }
+
+    function testNotEnoughUsers() public {
+        // Create POAPVerifier with less than 6 users
+        IPOAPMock smallPoapMock = new IPOAPMock();
+        POAPVerifier smallPoapVerifier = new POAPVerifier(
+            2,
+            address(smallPoapMock)
+        );
+        smallPoapMock.setBalance(user1, 2, 1);
+        smallPoapVerifier.checkAndRegister(user1);
+        smallPoapMock.setBalance(user2, 2, 1);
+        smallPoapVerifier.checkAndRegister(user2);
+
+        smallPoapVerifier.finishRegistration();
+
+        // Create Raffle contract with less than 6 users
+        vm.expectRevert("Users out of range");
+        new Raffle(address(smallPoapVerifier));
+    }
+
+    function testCannotPickWinnersBeforeCompletion() public {
+        // Ensure winners cannot be retrieved before the raffle is completed
+        vm.expectRevert("Raffle not completed yet");
+        raffle.getWinners();
+    }
+
+    // Helper function to validate winner address
+    function isValidWinner(address winner) internal view returns (bool) {
+        for (uint i = 0; i < users.length; i++) {
+            if (users[i] == winner) {
+                return true;
+            }
+        }
+        return false;
     }
 }

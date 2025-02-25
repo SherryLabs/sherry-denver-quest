@@ -48,6 +48,13 @@ contract POAPVerifier is Ownable {
     }
 
     /**
+     * @dev Finish registration process.
+     */
+    function finishRegistration() public onlyOwner {
+        registrationFinished = true;
+    }
+
+    /**
      * @dev Checks if a user has the POAP required without registering them.
      * @param _user The address of the user to check.
      * @return true if the user has all required POAPs, false otherwise.
@@ -62,5 +69,12 @@ contract POAPVerifier is Ownable {
      */
     function getVerifiedUsers() public view returns (address[] memory) {
         return verifiedUserList;
+    }
+
+    /**
+     * @dev Returns if the registration is finished.
+     */
+    function isRegistrationFinished() public view returns (bool) {
+        return registrationFinished;
     }
 }

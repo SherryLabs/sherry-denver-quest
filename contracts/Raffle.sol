@@ -1,13 +1,25 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import "./POAPVerifier.sol"; // Import the POAPVerifier contract
+
 contract Raffle {
     uint16 public totalUsers;
     uint16[5] public winners;
     bool public raffleCompleted;
 
-    constructor(uint16 _totalUsers) {
-        require(_totalUsers >= 6 && _totalUsers <= 300, "Users out of range");
+    address[5] public winnerAddresses;
+
+    POAPVerifier public poapVerifier;
+
+    constructor(address _poapVerifierAddress) {
+        poapVerifier = POAPVerifier(_poapVerifierAddress);
+        require(
+            poapVerifier.isRegistrationFinished(),
+            "Registration is not finished"
+        );
+        uint16 _totalUsers = uint16(poapVerifier.getVerifiedUsers().length);
+        require(_totalUsers > 5, "Users out of range");
         totalUsers = _totalUsers;
     }
 
@@ -36,10 +48,10 @@ contract Raffle {
      */
     function pickWinners() public {
         require(!raffleCompleted, "Raffle already completed");
-        require(totalUsers >= 5, "Not enough registered users");
 
         uint16 available = totalUsers;
         uint16[] memory swapArray = new uint16[](available);
+        address[] memory verifiedUsers = poapVerifier.getVerifiedUsers();
 
         for (uint16 i = 0; i < 5; i++) {
             uint16 randIndex = getRandomNumber(i) % available;
@@ -55,16 +67,19 @@ contract Raffle {
                 : swapArray[available - 1];
 
             available--; // Reduce available range
+
+            // Map winners to their addresses from verifiedUserList
+            winnerAddresses[i] = verifiedUsers[winners[i]];
         }
 
         raffleCompleted = true; // Mark raffle as completed
     }
 
     /**
-     * @dev Returns the selected winners.
+     * @dev Returns the selected winners' addresses.
      */
-    function getWinners() public view returns (uint16[5] memory) {
+    function getWinners() public view returns (address[5] memory) {
         require(raffleCompleted, "Raffle not completed yet");
-        return winners;
+        return winnerAddresses;
     }
 }

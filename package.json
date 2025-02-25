@@ -25,7 +25,7 @@
     "deploy:testnet:poapverifier": "TESTNET=1 npx hardhat ignition deploy ignition/modules/PoapVerifierModule.js --network alfajores",
     "deploy:mainnet:poapverifier": "TESTNET=0 npx hardhat ignition deploy ignition/modules/PoapVerifierModule.js --network celo",
     "mint:testnet:poaps": "TESTNET=1 npx hardhat ignition deploy ignition/modules/PoapMintModule.js --network alfajores",
-    "test": "~/.foundry/bin/forge test"
+    "test": "~/.foundry/bin/forge test -v"
   },
   "keywords": [],
   "author": "",
