@@ -23,8 +23,10 @@
   "scripts": {
     "deploy:testnet:mockpoap": "TESTNET=1 npx hardhat ignition deploy ignition/modules/MockPoapModule.js --network alfajores",
     "deploy:testnet:poapverifier": "TESTNET=1 npx hardhat ignition deploy ignition/modules/PoapVerifierModule.js --network alfajores",
-    "deploy:mainnet:poapverifier": "TESTNET=0 npx hardhat ignition deploy ignition/modules/PoapVerifierModule.js --network celo",
+    "deploy:testnet:raffle": "TESTNET=1 npx hardhat ignition deploy ignition/modules/RaffleModule.js --network alfajores",
     "mint:testnet:poaps": "TESTNET=1 npx hardhat ignition deploy ignition/modules/PoapMintModule.js --network alfajores",
+    "deploy:mainnet:poapverifier": "TESTNET=0 npx hardhat ignition deploy ignition/modules/PoapVerifierModule.js --network celo",
+    "deploy:mainnet:raffle": "TESTNET=0 npx hardhat ignition deploy ignition/modules/RaffleModule.js --network celo",
     "test": "~/.foundry/bin/forge test -v"
   },
   "keywords": [],
