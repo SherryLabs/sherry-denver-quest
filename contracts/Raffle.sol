@@ -1,87 +1,91 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import "./POAPVerifier.sol"; // Import the POAPVerifier contract
+import "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFCoordinatorV2Interface.sol";
+import "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Raffle {
-    uint16 public totalUsers;
+contract Raffle is VRFConsumerBaseV2, Ownable {
+    // Chainlink VRF variables
+    VRFCoordinatorV2Interface public vrfCoordinator;
+    uint64 public subscriptionId;
+    uint32 public callbackGasLimit;
+    uint16 public requestConfirmations;
+    uint8 public numWords = 5; // select 5 winners
+    uint16 public usersVerifiedCount;
+    bytes32 public keyHash;
+    uint256 public requestId;
+
+    // variables to store winners
     uint16[5] public winners;
-    bool public raffleCompleted;
+    mapping(address => bool) public isWinner;
+    mapping(uint16 => uint16) private swappedIndexes; // tack swaps
 
-    address[5] public winnerAddresses;
+    event RandomnessRequested(uint256 requestId);
 
-    POAPVerifier public poapVerifier;
-
-    constructor(address _poapVerifierAddress) {
-        poapVerifier = POAPVerifier(_poapVerifierAddress);
-        uint16 _totalUsers = uint16(poapVerifier.getVerifiedUsers().length);
-        require(_totalUsers > 5, "Users out of range");
-        totalUsers = _totalUsers;
+    constructor(
+        address _vrfCoordinator,
+        uint64 _subscriptionId,
+        bytes32 _keyHash,
+        uint16 _usersVerifiedCount
+    ) VRFConsumerBaseV2(_vrfCoordinator) Ownable(msg.sender) {
+        require(_usersVerifiedCount > 5, "Not enough verified users");
+        vrfCoordinator = VRFCoordinatorV2Interface(_vrfCoordinator);
+        subscriptionId = _subscriptionId;
+        keyHash = _keyHash;
+        usersVerifiedCount = _usersVerifiedCount;
     }
 
     /**
-     * @dev Generates a pseudo-random number using block variables and a seed.
+     * @dev Request random numbers from Chainlink VRF to select winners.
      */
-    function getRandomNumber(uint16 seed) private view returns (uint16) {
-        return
-            uint16(
-                uint(
-                    keccak256(
-                        abi.encodePacked(
-                            block.timestamp,
-                            block.prevrandao,
-                            msg.sender,
-                            seed
-                        )
-                    )
-                )
-            );
+    function selectWinners() external onlyOwner {
+        require(winners.length == 0, "Winners already selected");
+
+        // Request random numbers from Chainlink VRF
+        requestId = vrfCoordinator.requestRandomWords(
+            keyHash,
+            subscriptionId,
+            requestConfirmations,
+            callbackGasLimit,
+            numWords
+        );
+
+        emit RandomnessRequested(requestId);
     }
 
     /**
-     * @dev Selects 5 random winners using the Fisher-Yates Shuffle algorithm.
-     * Can only be executed once.
+     * @dev Callback function that Chainlink VRF calls with the random numbers.
+     * @param _requestId The ID of the request.
+     * @param _randomWords The random numbers generated.
      */
-    function pickWinners() public {
-        require(!raffleCompleted, "Raffle already completed");
+    function fulfillRandomWords(
+        uint256 _requestId,
+        uint256[] memory _randomWords
+    ) internal override {
+        require(requestId == _requestId, "Invalid request ID");
 
-        uint16 available = totalUsers;
-        uint16[] memory swapArray = new uint16[](available);
-        address[] memory verifiedUsers = poapVerifier.getVerifiedUsers();
+        uint16 userCount = usersVerifiedCount; // Total users
+        uint16 available = userCount; // Users left to pick
 
         for (uint16 i = 0; i < 5; i++) {
-            uint16 randIndex = getRandomNumber(i) % available;
+            uint16 randIndex = uint16(_randomWords[i] % available);
 
-            // Select the winner
-            winners[i] = (swapArray[randIndex] == 0)
+            // Get actual index (check if it was swapped)
+            uint16 selectedIndex = swappedIndexes[randIndex] == 0
                 ? randIndex
-                : swapArray[randIndex];
+                : swappedIndexes[randIndex];
 
-            // Move the last available number to the chosen position
-            swapArray[randIndex] = (swapArray[available - 1] == 0)
-                ? available - 1
-                : swapArray[available - 1];
+            // Store the selected index as a winner
+            winners[i] = selectedIndex;
+
+            // Swap selected index with the last available one
+            uint16 lastAvailable = available - 1;
+            swappedIndexes[randIndex] = swappedIndexes[lastAvailable] == 0
+                ? lastAvailable
+                : swappedIndexes[lastAvailable];
 
             available--; // Reduce available range
-
-            // Map winners to their addresses from verifiedUserList
-            winnerAddresses[i] = verifiedUsers[winners[i]];
         }
-
-        raffleCompleted = true; // Mark raffle as completed
-    }
-
-    /**
-     * @dev Returns the selected winners' addresses.
-     */
-    function getWinnersIndexes() public view returns (uint16[5] memory) {
-        return winners;
-    }
-
-    /**
-     * @dev Returns the selected winners' addresses.
-     */
-    function getWinners() public view returns (address[5] memory) {
-        return winnerAddresses;
     }
 }
