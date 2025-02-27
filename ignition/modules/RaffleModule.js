@@ -5,10 +5,7 @@ module.exports = buildModule("RaffleModule", (m) => {
   let poapVerifierAddress, deployedAddresses;
 
   // Check if environment variables are not empty or undefined
-  const PATH =
-    process.env.TESTNET == 1
-      ? "./ignition/deployments/chain-44787/deployed_addresses.json"
-      : "./ignition/deployments/chain-42220/deployed_addresses.json";
+  const PATH = `./ignition/deployments/chain-${process.env.CHAIN_ID}/deployed_addresses.json`;
 
   if (fs.existsSync(PATH)) {
     deployedAddresses = JSON.parse(fs.readFileSync(PATH, "utf8"));
