@@ -14,10 +14,6 @@ contract Raffle {
 
     constructor(address _poapVerifierAddress) {
         poapVerifier = POAPVerifier(_poapVerifierAddress);
-        require(
-            poapVerifier.isRegistrationFinished(),
-            "Registration is not finished"
-        );
         uint16 _totalUsers = uint16(poapVerifier.getVerifiedUsers().length);
         require(_totalUsers > 5, "Users out of range");
         totalUsers = _totalUsers;
