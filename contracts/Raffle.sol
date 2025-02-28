@@ -17,11 +17,17 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
     uint256 public requestId;
 
     // variables to store winners
+    bool public raffleEnded;
     uint16[5] public winners;
     mapping(address => bool) public isWinner;
     mapping(uint16 => uint16) private swappedIndexes; // tack swaps
 
     event RandomnessRequested(uint256 requestId);
+
+    modifier raffleNotEnded() {
+        require(!raffleEnded, "Winners already selected");
+        _;
+    }
 
     constructor(
         address _vrfCoordinator,
@@ -39,9 +45,7 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
     /**
      * @dev Request random numbers from Chainlink VRF to select winners.
      */
-    function selectWinners() external onlyOwner {
-        require(winners.length == 0, "Winners already selected");
-
+    function selectWinners() external onlyOwner raffleNotEnded {
         // Request random numbers from Chainlink VRF
         requestId = vrfCoordinator.requestRandomWords(
             keyHash,
@@ -62,7 +66,7 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
     function fulfillRandomWords(
         uint256 _requestId,
         uint256[] memory _randomWords
-    ) internal override {
+    ) internal override raffleNotEnded {
         require(requestId == _requestId, "Invalid request ID");
 
         uint16 userCount = usersVerifiedCount; // Total users
@@ -87,5 +91,7 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
 
             available--; // Reduce available range
         }
+
+        raffleEnded = true;
     }
 }
