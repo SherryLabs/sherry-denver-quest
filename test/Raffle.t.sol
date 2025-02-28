@@ -67,6 +67,11 @@ contract RaffleTest is Test {
         raffle.transferOwnership(owner);
     }
 
+    function testGlobalVariables() public {
+        vm.expectRevert("Not enough verified users");
+        new Raffle(address(vrfContract), subscriptionId, keyHash, 5);
+    }
+
     function testSubscriptionCreate() public {
         vm.expectEmit(true, true, false, false);
         emit SubscriptionCreated(2, address(this));
@@ -120,6 +125,107 @@ contract RaffleTest is Test {
             5,
             address(raffle)
         );
+        raffle.selectWinners();
+    }
+
+    function testRequestIsProcessed() public {
+        vrfContract.fundSubscription(1, 2 ether);
+        vrfContract.addConsumer(1, address(raffle));
+
+        vm.prank(owner);
+        raffle.selectWinners();
+
+        vm.expectEmit(true, false, false, true);
+        emit RandomWordsFulfilled(1, 1, 0, true);
+        vrfContract.fulfillRandomWords(1, address(raffle));
+    }
+
+    function testValidRequestIs() public {
+        vrfContract.fundSubscription(1, 2 ether);
+        vrfContract.addConsumer(1, address(raffle));
+
+        vm.prank(owner);
+        raffle.selectWinners();
+
+        vm.expectRevert("nonexistent request");
+        vrfContract.fulfillRandomWords(2, address(raffle));
+    }
+
+    function testResponseIsReceived() public {
+        vrfContract.fundSubscription(1, 2 ether);
+        vrfContract.addConsumer(1, address(raffle));
+
+        vm.prank(owner);
+        raffle.selectWinners();
+
+        vm.expectEmit(false, false, false, true);
+        emit RandomWordsFulfilled(1, 1, 0, true);
+        vrfContract.fulfillRandomWords(1, address(raffle));
+
+        bool raffleEnded = raffle.raffleEnded();
+        assertTrue(raffleEnded, "Raffle should be ended");
+        winners = raffle.getWinners();
+
+        bool allZeroes = true;
+        for (uint256 i = 0; i < 5; i++) {
+            if (winners[i] != 0) {
+                allZeroes = false;
+                break;
+            }
+        }
+        assertFalse(allZeroes, "getWinners() should not return [0,0,0,0,0]");
+    }
+
+    function testWinnersNoDuplicates() public {
+        vrfContract.fundSubscription(1, 2 ether);
+        vrfContract.addConsumer(1, address(raffle));
+
+        vm.prank(owner);
+        raffle.selectWinners();
+
+        vm.expectEmit(false, false, false, true);
+        emit RandomWordsFulfilled(1, 1, 0, true);
+        vrfContract.fulfillRandomWords(1, address(raffle));
+
+        winners = raffle.getWinners();
+
+        for (uint256 i = 0; i < 5; i++) {
+            for (uint256 j = i + 1; j < 5; j++) {
+                if (winners[i] == winners[j]) {
+                    revert("getWinners() should not have duplicate values");
+                }
+            }
+        }
+    }
+
+    function testDoubleResponseIsReceived() public {
+        vrfContract.fundSubscription(1, 2 ether);
+        vrfContract.addConsumer(1, address(raffle));
+
+        vm.prank(owner);
+        raffle.selectWinners();
+
+        vm.expectEmit(false, false, false, true);
+        emit RandomWordsFulfilled(1, 1, 0, true);
+        vrfContract.fulfillRandomWords(1, address(raffle));
+
+        vm.expectRevert("nonexistent request");
+        vrfContract.fulfillRandomWords(1, address(raffle));
+    }
+
+    function testSelectWinnersAfterRaffleEnded() public {
+        vrfContract.fundSubscription(1, 2 ether);
+        vrfContract.addConsumer(1, address(raffle));
+
+        vm.prank(owner);
+        raffle.selectWinners();
+
+        vm.expectEmit(false, false, false, true);
+        emit RandomWordsFulfilled(1, 1, 0, true);
+        vrfContract.fulfillRandomWords(1, address(raffle));
+
+        vm.prank(owner);
+        vm.expectRevert("Winners already selected");
         raffle.selectWinners();
     }
 }
