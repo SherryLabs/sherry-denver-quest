@@ -33,4 +33,7 @@ Thumbs.db
 
 /ignition/deployments/
 
+/events/*.json
+
 poapVerifierArgs.js
+raffleArgs.js

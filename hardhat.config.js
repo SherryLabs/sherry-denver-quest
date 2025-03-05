@@ -26,12 +26,18 @@ module.exports = {
       accounts: [process.env.PRIVATE_KEY],
       chainId: 43113,
     },
+    avalanche: {
+      url: "https://api.avax.network/ext/bc/C/rpc",
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: 43114,
+    },
   },
   etherscan: {
     apiKey: {
       alfajores: process.env.CELOSCAN_API_KEY,
       celo: process.env.CELOSCAN_API_KEY,
-      fuji: process.env.SNOWTRACE_API_KEY, // API key para verificar contratos en Fuji
+      fuji: process.env.SNOWTRACE_API_KEY,
+      avalanche: process.env.SNOWTRACE_API_KEY,
     },
     customChains: [
       {
@@ -56,6 +62,14 @@ module.exports = {
         urls: {
           apiURL: "https://api-testnet.snowtrace.io/api",
           browserURL: "https://testnet.snowtrace.io/",
+        },
+      },
+      {
+        network: "avalanche",
+        chainId: 43114,
+        urls: {
+          apiURL: "https://api.snowtrace.io/api",
+          browserURL: "https://snowtrace.io/",
         },
       },
     ],
