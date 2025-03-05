@@ -13,16 +13,16 @@
 
 ### Contracts deployment and POAPs minting
 ```bash
-npm run deploy:testnet:mockpoap
-npm run deploy:testnet:poapverifier
-npm run mint:testnet:poaps
+npm run testnet:deploy:mockpoap
+npm run testnet:deploy:poapverifier
+npm run testnet:mint:poaps
 ```
 
-### Raffle contract
+### Raffle contract ⚠️ UNDER CONSTUCTION ⚠️
 > Before the Raffle contract deployment, take in account that the POAPVerifier contract must be finished. In order to put the contract at finished state you must register at least 6 users and execute the `finishRegistration()` function, after that you can deply de Raffle contract:
 
 ```bash
-npm deploy:testnet:raffle
+npm testnet:deploy:raffle
 ```
 
 ### Contracts verification
@@ -36,14 +36,14 @@ npx hardhat verify --network alfajores <RAFFLE-ADDRESS> <POAP-VERIFIER-ADDRESS>
 
 ### Contract deployment
 ```bash
-npm run deploy:mainnet:poapverifier
+npm run mainnet:deploy:poapverifier
 npx hardhat verify --network celo --constructor-args poapVerifierArgs.js <POAP-VERIFIER-ADDRESS>
 ```
-### Raffle contract
+### Raffle contract ⚠️ UNDER CONSTUCTION ⚠️
 > Before the Raffle contract deployment, take in account that the POAPVerifier contract must be finished. In order to put the contract at finished state you must register at least 6 users and execute the `finishRegistration()` function, after that you can deply de Raffle contract:
 
 ```bash
-npm deploy:mainnet:raffle
+npm mainnet:deploy:raffle
 ```
 
 ### Contracts verification

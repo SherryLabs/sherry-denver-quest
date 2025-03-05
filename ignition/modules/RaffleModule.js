@@ -4,9 +4,9 @@ const fs = require("fs");
 module.exports = buildModule("RaffleModule", (m) => {
   let poapVerifierAddress, deployedAddresses;
 
-  // Check if environment variables are not empty or undefined
   const PATH = `./ignition/deployments/chain-${process.env.CHAIN_ID}/deployed_addresses.json`;
 
+  // Check if POAPVerifier is already deployed
   if (fs.existsSync(PATH)) {
     deployedAddresses = JSON.parse(fs.readFileSync(PATH, "utf8"));
     if (!deployedAddresses["PoapVerifierModule#POAPVerifier"]) {

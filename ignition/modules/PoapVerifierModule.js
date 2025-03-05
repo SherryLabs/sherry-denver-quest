@@ -4,10 +4,10 @@ const fs = require("fs");
 module.exports = buildModule("PoapVerifierModule", (m) => {
   let poapContractAddress, deployedAddresses;
 
-  // Check if environment variables are not empty or undefined
   if (process.env.TESTNET == 1) {
-    const PATH = `./ignition/deployments/chain-${process.env.CHAIN_ID}/deployed_addresses.json`;;
+    const PATH = `./ignition/deployments/chain-${process.env.CHAIN_ID}/deployed_addresses.json`;
 
+    // Check if MockPoap contract was deployed and check if deployed_addresses.json exist
     if (fs.existsSync(PATH)) {
       deployedAddresses = JSON.parse(fs.readFileSync(PATH, "utf8"));
       if (!deployedAddresses["MockPoapModule#MockPOAP"]) {
@@ -19,6 +19,7 @@ module.exports = buildModule("PoapVerifierModule", (m) => {
       throw new Error("MockPoapContract is not deployed yet");
     }
   } else {
+    // Check if POAP_CONTRACT environment variable is set
     if (process.env.POAP_CONTRACT == "") {
       throw new Error(
         "POAP_CONTRACT is not defined in the environment variables"
@@ -29,7 +30,9 @@ module.exports = buildModule("PoapVerifierModule", (m) => {
   }
 
   if (!process.env.POAP_EVENT_ID) {
-    throw new Error("POAP_EVENT_ID is not defined in the environment variables");
+    throw new Error(
+      "POAP_EVENT_ID is not defined in the environment variables"
+    );
   }
 
   const poapVerifier = m.contract("POAPVerifier", [
