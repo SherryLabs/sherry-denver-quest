@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
+    "@chainlink/contracts": "^1.3.0",
     "append": "^0.1.1",
     "async": "^0.1.22",
     "consolidate": "^0.3.1",
@@ -13,7 +14,6 @@
     "rimraf": "^1.0.9"
   },
   "devDependencies": {
-    "@chainlink/contracts": "^1.3.0",
     "@nomicfoundation/hardhat-ignition": "^0.15.9",
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
     "@nomicfoundation/hardhat-verify": "^2.0.12",
@@ -23,10 +23,12 @@
   },
   "scripts": {
     "deploy:testnet:mockpoap": "TESTNET=1 npx hardhat ignition deploy ignition/modules/MockPoapModule.js --network alfajores",
-    "deploy:testnet:poapverifier": "TESTNET=1 npx hardhat ignition deploy ignition/modules/PoapVerifierModule.js --network alfajores",
+    "deploy:testnet:poapverifier": "TESTNET=1 CHAIN_ID=44787 npx hardhat ignition deploy ignition/modules/PoapVerifierModule.js --network alfajores",
+    "deploy:testnet:raffle": "TESTNET=1 CHAIN_ID=44787 npx hardhat ignition deploy ignition/modules/RaffleModule.js --network alfajores",
+    "mint:testnet:poaps": "TESTNET=1 CHAIN_ID=44787 npx hardhat ignition deploy ignition/modules/PoapMintModule.js --network alfajores",
     "deploy:mainnet:poapverifier": "TESTNET=0 npx hardhat ignition deploy ignition/modules/PoapVerifierModule.js --network celo",
-    "mint:testnet:poaps": "TESTNET=1 npx hardhat ignition deploy ignition/modules/PoapMintModule.js --network alfajores",
-    "test": "~/.foundry/bin/forge test"
+    "deploy:mainnet:raffle": "TESTNET=0 CHAIN_ID=42220 npx hardhat ignition deploy ignition/modules/RaffleModule.js --network celo",
+    "test": "~/.foundry/bin/forge test -v"
   },
   "keywords": [],
   "author": "",

@@ -2,65 +2,79 @@
 pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
-
-interface IPOAP {
-    function balanceOf(
-        address account,
-        uint256 id
-    ) external view returns (uint256);
-}
+import "./interfaces/IPoap.sol";
 
 contract POAPVerifier is Ownable {
-    address public poapContract;
-    uint256 public poapId;
+    IPOAP public poapContract;
+    uint256 public eventId;
     bool public registrationFinished;
 
     mapping(address => bool) public verifiedUsers;
+    mapping(address => bool) public registeredUsers;
     address[] public verifiedUserList;
-
-    event UserVerified(address indexed user);
+    address[] public registeredUserList;
 
     modifier onlyIfNotFinished() {
         require(!registrationFinished, "Registration has already ended");
         _;
     }
 
-    constructor(uint256 _poapId, address _poapContract) Ownable(msg.sender) {
-        poapContract = _poapContract;
-        poapId = _poapId;
+    constructor(uint256 _eventId, address _poapContract) Ownable(msg.sender) {
+        poapContract = IPOAP(_poapContract);
+        eventId = _eventId;
     }
 
     /**
-     * @dev Checks if a user holds the required POAP and registers them.
-     * @param _user The address of the user to verify.
+     * @dev Finish registration process.
      */
-    function checkAndRegister(address _user) public onlyIfNotFinished {
-        require(!verifiedUsers[_user], "User already verified");
-        require(
-            checkEligibility(_user),
-            "User does not have the required POAP"
-        );
-
-        verifiedUserList.push(_user);
-        verifiedUsers[_user] = true;
-
-        emit UserVerified(_user);
+    function finishRegistration() external onlyOwner {
+        registrationFinished = true;
     }
 
     /**
-     * @dev Checks if a user has the POAP required without registering them.
-     * @param _user The address of the user to check.
-     * @return true if the user has all required POAPs, false otherwise.
+     * @dev Check if users have the required POAP and verify them.
+     * @param _tokenIds All minted poaps tokenIds for the Sherry eventId.
      */
-    function checkEligibility(address _user) public view returns (bool) {
-        IPOAP poap = IPOAP(poapContract);
-        return poap.balanceOf(_user, poapId) > 0;
+    function checkRegisteredUsers(
+        uint32[] calldata _tokenIds
+    ) external onlyOwner {
+        require(registrationFinished, "Registration is not finished");
+
+        for (uint32 i = 0; i < _tokenIds.length; i++) {
+            uint256 eId = poapContract.tokenEvent(_tokenIds[i]);
+            require(eventId == eId, "EventId don't belongs to the Raffle");
+
+            address poapOwner = poapContract.ownerOf(_tokenIds[i]);
+
+            if (registeredUsers[poapOwner] && !verifiedUsers[poapOwner]) {
+                verifiedUsers[poapOwner] = true;
+                verifiedUserList.push(poapOwner);
+            }
+        }
+    }
+
+    /**
+     * @dev Registers the _user for the raffle.
+     * @param _user The address of the user that will be registered.
+     */
+    function registerUser(address _user) external {
+        require(!registrationFinished, "Registration has already ended");
+        require(!registeredUsers[_user], "User already registered");
+        registeredUsers[_user] = true;
+        registeredUserList.push(_user);
     }
 
     /**
      * @dev Returns the list of verified users.
      */
-    function getVerifiedUsers() public view returns (address[] memory) {
+    function getVerifiedUsers() external view returns (address[] memory) {
         return verifiedUserList;
+    }
+
+    /**
+     * @dev Returns the list of registered users.
+     */
+    function getRegisteredUsers() external view returns (address[] memory) {
+        return registeredUserList;
     }
 }
