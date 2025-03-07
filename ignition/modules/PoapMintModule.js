@@ -27,7 +27,7 @@ module.exports = buildModule("PoapMintModule", (m) => {
   const mockPoap = m.contractAt("MockPOAP", poapContractAddress);
 
   // Minting POAPs with valid arguments
-  m.call(mockPoap, "setTokenOwner", [1, process.env.TEST_ADDRESS], {
+  m.call(mockPoap, "setTokenOwner", [1, process.env.TESTNET_ADDRESS], {
     id: "setTokenOwner",
   });
   m.call(mockPoap, "setTokenEvent", [1, process.env.POAP_EVENT_ID], {

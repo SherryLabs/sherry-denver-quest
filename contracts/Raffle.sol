@@ -7,14 +7,14 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract Raffle is VRFConsumerBaseV2, Ownable {
     // Chainlink VRF variables
-    VRFCoordinatorV2Interface vrfCoordinator;
-    uint64 subscriptionId;
+    VRFCoordinatorV2Interface public vrfCoordinator;
+    uint64 public subscriptionId;
     uint32 callbackGasLimit = 200000;
     uint16 requestConfirmations = 3;
     uint8 numWords = 5; // select 5 winners
     uint16 public usersVerifiedCount;
-    bytes32 keyHash;
-    uint256 requestId;
+    bytes32 public keyHash;
+    uint256 public requestId;
 
     // variables to store winners
     bool public raffleEnded;

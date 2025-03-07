@@ -18,33 +18,39 @@ npm run testnet:deploy:poapverifier
 npm run testnet:mint:poaps
 ```
 
-### Raffle contract ⚠️ UNDER CONSTUCTION ⚠️
-> Before the Raffle contract deployment, take in account that the POAPVerifier contract must be finished. In order to put the contract at finished state you must register at least 6 users and execute the `finishRegistration()` function, after that you can deply de Raffle contract:
+### Raffle contract
 
-```bash
-npm testnet:deploy:raffle
-```
+#### Steps
+1. Coordinatior contract: execute createSuscription() and get suscriptionId from logs
+2. deploy raffle contract `npm testnet:deploy:raffle`
+3. Coordinatior contract: execute addConsumer(subId, raffleAddress)
+4, Link token contract: execute transferAndCall(coordinatorAddress, amount, abi.encode(subId)) amount: 1000000000000000000 (1 $LINK)
+5. Raffle contract: execute electWinners()
+
 
 ### Contracts verification
 ```bash
 npx hardhat verify --network alfajores <MOCK-POAP-ADDRESS>
 npx hardhat verify --network alfajores --constructor-args poapVerifierArgs.js <POAP-VERIFIER-ADDRESS>
-npx hardhat verify --network alfajores <RAFFLE-ADDRESS> <POAP-VERIFIER-ADDRESS>
+npx hardhat verify --network alfajores --constructor-args raffleArgs.js <RAFFLE-ADDRESS>
 ```
 
-## Mainnet
+## MAINNET
 
 ### Contract deployment
 ```bash
 npm run mainnet:deploy:poapverifier
 npx hardhat verify --network celo --constructor-args poapVerifierArgs.js <POAP-VERIFIER-ADDRESS>
 ```
-### Raffle contract ⚠️ UNDER CONSTUCTION ⚠️
-> Before the Raffle contract deployment, take in account that the POAPVerifier contract must be finished. In order to put the contract at finished state you must register at least 6 users and execute the `finishRegistration()` function, after that you can deply de Raffle contract:
 
-```bash
-npm mainnet:deploy:raffle
-```
+### Raffle contract ⚠️ UNDER CONSTRUCTION ⚠️
+
+#### Steps
+1. Coordinatior contract: execute createSuscription() and get suscriptionId from logs
+2. deploy raffle contract `npm mainnet:deploy:raffle`
+3. Coordinatior contract: execute addConsumer(subId, raffleAddress)
+4, Link token contract: execute transferAndCall(coordinatorAddress, amount, abi.encode(subId)) amount: 1000000000000000000 (1 $LINK)
+5. Raffle contract: execute electWinners()
 
 ### Contracts verification
 ```bash
