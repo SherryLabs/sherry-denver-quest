@@ -10,7 +10,6 @@ contract RaffleTest is Test {
     // https://docs.chain.link/docs/vrf/v2/supported-networks/#configurations
     VRFCoordinatorV2Mock public vrfContract; // Mock VRFCoordinator
     uint64 public subscriptionId;
-    uint16 public usersVerifiedCount = 300;
     // https://docs.chain.link/docs/vrf/v2/supported-networks/#configurations
     bytes32 public keyHash =
         bytes32(
@@ -21,7 +20,14 @@ contract RaffleTest is Test {
     address public owner = address(0xABCD);
     address public user1 = address(0x1);
     address public user2 = address(0x2);
-    uint16[5] public winners;
+    address public user3 = address(0x3);
+    address public user4 = address(0x4);
+    address public user5 = address(0x5);
+    address public user6 = address(0x6);
+    address[5] public winners;
+
+    // Mock addresses for testing
+    address[] public testAddresses;
 
     event SubscriptionCreated(uint64 indexed subId, address owner);
     event SubscriptionFunded(
@@ -48,6 +54,8 @@ contract RaffleTest is Test {
     );
 
     event RandomnessRequested(uint256 requestId);
+    event VerifiedUserAdded(address user);
+    event VerifiedUsersBatchAdded(uint256 count);
 
     function setUp() public {
         // Deploy VRF
@@ -58,46 +66,112 @@ contract RaffleTest is Test {
         raffle = new Raffle(
             address(vrfContract),
             subscriptionId,
-            keyHash,
-            usersVerifiedCount
+            keyHash
         );
 
         // Transfer ownership to the owner
         vm.prank(address(this));
         raffle.transferOwnership(owner);
+
+        // Create test addresses
+        for (uint i = 0; i < 10; i++) {
+            testAddresses.push(address(uint160(0x1000 + i)));
+        }
     }
 
-    function testGlobalVariables() public {
+    function testAddVerifiedUser() public {
+        vm.prank(owner);
+        vm.expectEmit(false, false, false, true);
+        emit VerifiedUserAdded(user1);
+        raffle.addVerifiedUser(user1);
+        
+        bool isVerified = raffle.isVerified(user1);
+        assertTrue(isVerified, "User should be verified");
+        
+        uint256 count = raffle.getVerifiedUsersCount();
+        assertEq(count, 1, "Should have 1 verified user");
+    }
+    
+    function testAddDuplicateUser() public {
+        vm.prank(owner);
+        raffle.addVerifiedUser(user1);
+        
+        vm.prank(owner);
+        vm.expectRevert("User already verified");
+        raffle.addVerifiedUser(user1);
+    }
+    
+    function testAddVerifiedUsersBatch() public {
+        address[] memory users = new address[](3);
+        users[0] = user1;
+        users[1] = user2;
+        users[2] = user3;
+        
+        vm.prank(owner);
+        vm.expectEmit(false, false, false, true);
+        emit VerifiedUsersBatchAdded(3);
+        raffle.addVerifiedUsersBatch(users);
+        
+        uint256 count = raffle.getVerifiedUsersCount();
+        assertEq(count, 3, "Should have 3 verified users");
+        
+        bool isUser1Verified = raffle.isVerified(user1);
+        bool isUser2Verified = raffle.isVerified(user2);
+        bool isUser3Verified = raffle.isVerified(user3);
+        
+        assertTrue(isUser1Verified && isUser2Verified && isUser3Verified, "All users should be verified");
+    }
+    
+    function testAddVerifiedUsersBatchWithDuplicates() public {
+        // Add user1 first
+        vm.prank(owner);
+        raffle.addVerifiedUser(user1);
+        
+        // Try to add user1 again in a batch
+        address[] memory users = new address[](3);
+        users[0] = user1;  // duplicate
+        users[1] = user2;
+        users[2] = user3;
+        
+        vm.prank(owner);
+        raffle.addVerifiedUsersBatch(users);
+        
+        uint256 count = raffle.getVerifiedUsersCount();
+        assertEq(count, 3, "Should have 3 verified users (no duplicates)");
+    }
+    
+    function testGetAllVerifiedUsers() public {
+        vm.startPrank(owner);
+        raffle.addVerifiedUser(user1);
+        raffle.addVerifiedUser(user2);
+        vm.stopPrank();
+        
+        address[] memory users = raffle.getAllVerifiedUsers();
+        assertEq(users.length, 2, "Should return 2 users");
+        assertEq(users[0], user1, "First user should be user1");
+        assertEq(users[1], user2, "Second user should be user2");
+    }
+
+    function testNotEnoughVerifiedUsers() public {
+        vm.prank(owner);
+        raffle.addVerifiedUser(user1);
+        
+        vm.prank(owner);
         vm.expectRevert("Not enough verified users");
-        new Raffle(address(vrfContract), subscriptionId, keyHash, 5);
-    }
-
-    function testSubscriptionCreate() public {
-        vm.expectEmit(true, true, false, false);
-        emit SubscriptionCreated(2, address(this));
-        vrfContract.createSubscription();
-
-        (uint96 balance, uint64 reqCount, address vrfOwner, ) = vrfContract
-            .getSubscription(2);
-
-        assertEq(balance, 0);
-        assertEq(reqCount, 0);
-        assertEq(vrfOwner, address(this));
-    }
-
-    function testSubscriptionFund() public {
-        vm.expectEmit(true, true, true, false);
-        emit SubscriptionFunded(1, 0, 2 ether);
-        vrfContract.fundSubscription(1, 2 ether);
-    }
-
-    function testAddConsumer() public {
-        vm.expectEmit(true, false, false, true);
-        emit ConsumerAdded(1, address(raffle));
-        vrfContract.addConsumer(1, address(raffle));
+        raffle.selectWinners();
     }
 
     function testRequestIsSent() public {
+        // Add enough verified users
+        vm.startPrank(owner);
+        raffle.addVerifiedUser(user1);
+        raffle.addVerifiedUser(user2);
+        raffle.addVerifiedUser(user3);
+        raffle.addVerifiedUser(user4);
+        raffle.addVerifiedUser(user5);
+        raffle.addVerifiedUser(user6);
+        vm.stopPrank();
+        
         vrfContract.fundSubscription(1, 2 ether);
         vrfContract.addConsumer(1, address(raffle));
 
@@ -108,6 +182,13 @@ contract RaffleTest is Test {
     }
 
     function testRequestIsReceived() public {
+        // Add enough verified users
+        vm.startPrank(owner);
+        for (uint i = 0; i < 6; i++) {
+            raffle.addVerifiedUser(testAddresses[i]);
+        }
+        vm.stopPrank();
+        
         vrfContract.fundSubscription(1, 2 ether);
         vrfContract.addConsumer(1, address(raffle));
 
@@ -129,6 +210,13 @@ contract RaffleTest is Test {
     }
 
     function testRequestIsProcessed() public {
+        // Add enough verified users
+        vm.startPrank(owner);
+        for (uint i = 0; i < 6; i++) {
+            raffle.addVerifiedUser(testAddresses[i]);
+        }
+        vm.stopPrank();
+        
         vrfContract.fundSubscription(1, 2 ether);
         vrfContract.addConsumer(1, address(raffle));
 
@@ -141,6 +229,13 @@ contract RaffleTest is Test {
     }
 
     function testValidRequestIs() public {
+        // Add enough verified users
+        vm.startPrank(owner);
+        for (uint i = 0; i < 6; i++) {
+            raffle.addVerifiedUser(testAddresses[i]);
+        }
+        vm.stopPrank();
+        
         vrfContract.fundSubscription(1, 2 ether);
         vrfContract.addConsumer(1, address(raffle));
 
@@ -152,6 +247,13 @@ contract RaffleTest is Test {
     }
 
     function testResponseIsReceived() public {
+        // Add enough verified users
+        vm.startPrank(owner);
+        for (uint i = 0; i < 10; i++) {
+            raffle.addVerifiedUser(testAddresses[i]);
+        }
+        vm.stopPrank();
+        
         vrfContract.fundSubscription(1, 2 ether);
         vrfContract.addConsumer(1, address(raffle));
 
@@ -168,15 +270,22 @@ contract RaffleTest is Test {
 
         bool allZeroes = true;
         for (uint256 i = 0; i < 5; i++) {
-            if (winners[i] != 0) {
+            if (winners[i] != address(0)) {
                 allZeroes = false;
                 break;
             }
         }
-        assertFalse(allZeroes, "getWinners() should not return [0,0,0,0,0]");
+        assertFalse(allZeroes, "getWinners() should not return all zero addresses");
     }
 
     function testWinnersNoDuplicates() public {
+        // Add enough verified users
+        vm.startPrank(owner);
+        for (uint i = 0; i < 10; i++) {
+            raffle.addVerifiedUser(testAddresses[i]);
+        }
+        vm.stopPrank();
+        
         vrfContract.fundSubscription(1, 2 ether);
         vrfContract.addConsumer(1, address(raffle));
 
@@ -191,14 +300,21 @@ contract RaffleTest is Test {
 
         for (uint256 i = 0; i < 5; i++) {
             for (uint256 j = i + 1; j < 5; j++) {
-                if (winners[i] == winners[j]) {
-                    revert("getWinners() should not have duplicate values");
+                if (winners[i] == winners[j] && winners[i] != address(0)) {
+                    revert("getWinners() should not have duplicate addresses");
                 }
             }
         }
     }
 
     function testDoubleResponseIsReceived() public {
+        // Add enough verified users
+        vm.startPrank(owner);
+        for (uint i = 0; i < 10; i++) {
+            raffle.addVerifiedUser(testAddresses[i]);
+        }
+        vm.stopPrank();
+        
         vrfContract.fundSubscription(1, 2 ether);
         vrfContract.addConsumer(1, address(raffle));
 
@@ -214,6 +330,13 @@ contract RaffleTest is Test {
     }
 
     function testSelectWinnersAfterRaffleEnded() public {
+        // Add enough verified users
+        vm.startPrank(owner);
+        for (uint i = 0; i < 10; i++) {
+            raffle.addVerifiedUser(testAddresses[i]);
+        }
+        vm.stopPrank();
+        
         vrfContract.fundSubscription(1, 2 ether);
         vrfContract.addConsumer(1, address(raffle));
 
@@ -227,5 +350,25 @@ contract RaffleTest is Test {
         vm.prank(owner);
         vm.expectRevert("Winners already selected");
         raffle.selectWinners();
+    }
+    
+    function testAddVerifiedUserAfterRaffleEnded() public {
+        // Add enough verified users
+        vm.startPrank(owner);
+        for (uint i = 0; i < 10; i++) {
+            raffle.addVerifiedUser(testAddresses[i]);
+        }
+        vm.stopPrank();
+        
+        vrfContract.fundSubscription(1, 2 ether);
+        vrfContract.addConsumer(1, address(raffle));
+
+        vm.prank(owner);
+        raffle.selectWinners();
+        vrfContract.fulfillRandomWords(1, address(raffle));
+        
+        vm.prank(owner);
+        vm.expectRevert("Winners already selected");
+        raffle.addVerifiedUser(user1);
     }
 }

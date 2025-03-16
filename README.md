@@ -70,13 +70,16 @@ npx hardhat verify --network avalanche --constructor-args raffleArgs.js <RAFFLE-
    ```bash
    node events/getIdsFromParticipants.js
    ```
-
 3. The generated files will be:
    - `tokenIds.json`: Contains an array of all token IDs.
    - `tokenIdOwnerPairs.json`: Contains an array of objects with `tokenId` and `owner`.
 
 4. Use the generated `tokenIds.json` to validate users in the POAPVerifier contract.
 
-### Example Transaction Hash
+## Finish Registration
 
-Here is an example transaction hash for the process: `<YOUR_TX_HASH>`
+The registration was finished Sun 16 Mar, here is the [transaction hash](https://celoscan.io/tx/0x2ed6d3de5e24a178bb53398998e1a6aebad4c6c815fa18eca14003ebc91638d9), there you can validate all the `tokenId` that were sent.
+
+## Check Registered Users
+
+To verify the registered users sent, check the following [transaction hash](https://celoscan.io/tx/0x43a0ec9ab4599dcd57df09a772a1dc8888689b03b0abdde501768633436eede1) for the process.

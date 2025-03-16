@@ -12,16 +12,20 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
     uint32 callbackGasLimit = 200000;
     uint16 requestConfirmations = 3;
     uint8 numWords = 5; // select 5 winners
-    uint16 public usersVerifiedCount;
     bytes32 public keyHash;
     uint256 public requestId;
 
-    // variables to store winners
+    // User and winner tracking
+    address[] public verifiedUsers;
+    address[5] public winners;
+    mapping(address => bool) public isVerified;
+    mapping(uint16 => uint16) private swappedIndexes; // track swaps
+
     bool public raffleEnded;
-    uint16[5] public winners;
-    mapping(uint16 => uint16) private swappedIndexes; // tack swaps
 
     event RandomnessRequested(uint256 requestId);
+    event VerifiedUserAdded(address user);
+    event VerifiedUsersBatchAdded(uint256 count);
 
     modifier raffleNotEnded() {
         require(!raffleEnded, "Winners already selected");
@@ -31,20 +35,44 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
     constructor(
         address _vrfCoordinator,
         uint64 _subscriptionId,
-        bytes32 _keyHash,
-        uint16 _usersVerifiedCount
+        bytes32 _keyHash
     ) VRFConsumerBaseV2(_vrfCoordinator) Ownable(msg.sender) {
-        require(_usersVerifiedCount > 5, "Not enough verified users");
         vrfCoordinator = VRFCoordinatorV2Interface(_vrfCoordinator);
         subscriptionId = _subscriptionId;
         keyHash = _keyHash;
-        usersVerifiedCount = _usersVerifiedCount;
+    }
+
+    /**
+     * @dev Add a verified user address to the contract.
+     * @param user Address of the verified user.
+     */
+    function addVerifiedUser(address user) external onlyOwner raffleNotEnded {
+        require(!isVerified[user], "User already verified");
+        verifiedUsers.push(user);
+        isVerified[user] = true;
+        emit VerifiedUserAdded(user);
+    }
+
+    /**
+     * @dev Add multiple verified user addresses to the contract.
+     * @param users Array of verified user addresses.
+     */
+    function addVerifiedUsersBatch(address[] calldata users) external onlyOwner raffleNotEnded {
+        for (uint i = 0; i < users.length; i++) {
+            if (!isVerified[users[i]]) {
+                verifiedUsers.push(users[i]);
+                isVerified[users[i]] = true;
+            }
+        }
+        emit VerifiedUsersBatchAdded(users.length);
     }
 
     /**
      * @dev Request random numbers from Chainlink VRF to select winners.
      */
     function selectWinners() external onlyOwner raffleNotEnded {
+        require(verifiedUsers.length > 5, "Not enough verified users");
+        
         // Request random numbers from Chainlink VRF
         requestId = vrfCoordinator.requestRandomWords(
             keyHash,
@@ -68,7 +96,7 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
     ) internal override raffleNotEnded {
         require(requestId == _requestId, "Invalid request ID");
 
-        uint16 userCount = usersVerifiedCount; // Total users
+        uint16 userCount = uint16(verifiedUsers.length); // Total users
         uint16 available = userCount; // Users left to pick
 
         for (uint16 i = 0; i < 5; i++) {
@@ -79,8 +107,8 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
                 ? randIndex
                 : swappedIndexes[randIndex];
 
-            // Store the selected index as a winner
-            winners[i] = selectedIndex;
+            // Store the selected user address as a winner
+            winners[i] = verifiedUsers[selectedIndex];
 
             // Swap selected index with the last available one
             uint16 lastAvailable = available - 1;
@@ -94,11 +122,31 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
         raffleEnded = true;
     }
 
-
     /**
-     * @dev Returns the list of winners.
+     * @dev Returns the list of winner addresses.
      */
-    function getWinners() external view returns (uint16[5] memory) {
+    function getWinners() external view returns (address[5] memory) {
         return winners;
+    }
+    
+    /**
+     * @dev Returns the total number of verified users.
+     */
+    function getVerifiedUsersCount() external view returns (uint256) {
+        return verifiedUsers.length;
+    }
+    
+    /**
+     * @dev Check if an address is a verified user.
+     */
+    function isUserVerified(address user) external view returns (bool) {
+        return isVerified[user];
+    }
+    
+    /**
+     * @dev Returns all verified user addresses.
+     */
+    function getAllVerifiedUsers() external view returns (address[] memory) {
+        return verifiedUsers;
     }
 }

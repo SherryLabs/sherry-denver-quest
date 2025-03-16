@@ -9,4 +9,10 @@ remappings = [
     "hardhat/=node_modules/hardhat/",
     "forge-std/=lib/forge-std/src/",
 ]
+# Configuración de Solidity
+solc_version = "0.8.28"  # Usar una versión disponible en Foundry
+auto_detect_solc = true  # Permitir detección automática de versiones compatibles
+optimizer = true
+optimizer_runs = 200
+
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
