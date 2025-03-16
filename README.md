@@ -1,6 +1,5 @@
 # POAPs Denver Quest
 
-
 ## Installation
 
 ### Install dependencies
@@ -25,7 +24,7 @@ npm run testnet:mint:poaps
 2. Set env variables for Raffle contract
 3. Deploy raffle contract `npm testnet:deploy:raffle`
 4. Coordinatior contract: execute addConsumer(subId, raffleAddress)
-5, Link token contract: execute transferAndCall(coordinatorAddress, amount, abi.encode(subId)) amount: 1000000000000000000 (1 $LINK)
+5. Link token contract: execute transferAndCall(coordinatorAddress, amount, abi.encode(subId)) amount: 1000000000000000000 (1 $LINK)
 6. Raffle contract: execute electWinners()
 
 ### Contracts verification
@@ -50,10 +49,34 @@ npx hardhat verify --network celo --constructor-args poapVerifierArgs.js <POAP-V
 2. Set env variables for Raffle contract
 3. Deploy raffle contract `npm testnet:deploy:raffle`
 4. Coordinatior contract: execute addConsumer(subId, raffleAddress)
-5, Link token contract: execute transferAndCall(coordinatorAddress, amount, abi.encode(subId)) amount: 1000000000000000000 (1 $LINK) https://snowtrace.io/address/0x5947BB275c521040051D82396192181b413227A3/contract/43114/writeContract?chainid=43114
+5. Link token contract: execute transferAndCall(coordinatorAddress, amount, abi.encode(subId)) amount: 1000000000000000000 (1 $LINK) https://snowtrace.io/address/0x5947BB275c521040051D82396192181b413227A3/contract/43114/writeContract?chainid=43114
 6. Raffle contract: execute electWinners()
 
 #### Contract verification
 ```bash
 npx hardhat verify --network avalanche --constructor-args raffleArgs.js <RAFFLE-ADDRESS>
 ```
+
+## Obtaining Token IDs and Participants List
+
+### Steps to generate token IDs and participants list
+
+1. Fetch events and store participants:
+   ```bash
+   node events/index.js
+   ```
+
+2. Generate token IDs and tokenId-owner pairs:
+   ```bash
+   node events/getIdsFromParticipants.js
+   ```
+
+3. The generated files will be:
+   - `tokenIds.json`: Contains an array of all token IDs.
+   - `tokenIdOwnerPairs.json`: Contains an array of objects with `tokenId` and `owner`.
+
+4. Use the generated `tokenIds.json` to validate users in the POAPVerifier contract.
+
+### Example Transaction Hash
+
+Here is an example transaction hash for the process: `<YOUR_TX_HASH>`
