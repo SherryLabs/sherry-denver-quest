@@ -11,43 +11,49 @@
 
 ## Testnet
 
-### Contracts deployment and POAPs minting
+### POAP contracts deployment and POAPs minting
 ```bash
-npm run deploy:testnet:mockpoap
-npm run deploy:testnet:poapverifier
-npm run mint:testnet:poaps
+npm run testnet:deploy:mockpoap
+npm run testnet:deploy:poapverifier
+npm run testnet:mint:poaps
 ```
 
 ### Raffle contract
-> Before the Raffle contract deployment, take in account that the POAPVerifier contract must be finished. In order to put the contract at finished state you must register at least 6 users and execute the `finishRegistration()` function, after that you can deply de Raffle contract:
 
-```bash
-npm deploy:testnet:raffle
-```
+#### Steps
+1. Coordinatior contract: execute createSuscription() and get subscriptionId from logs
+2. Set env variables for Raffle contract
+3. Deploy raffle contract `npm testnet:deploy:raffle`
+4. Coordinatior contract: execute addConsumer(subId, raffleAddress)
+5, Link token contract: execute transferAndCall(coordinatorAddress, amount, abi.encode(subId)) amount: 1000000000000000000 (1 $LINK)
+6. Raffle contract: execute electWinners()
 
 ### Contracts verification
 ```bash
 npx hardhat verify --network alfajores <MOCK-POAP-ADDRESS>
 npx hardhat verify --network alfajores --constructor-args poapVerifierArgs.js <POAP-VERIFIER-ADDRESS>
-npx hardhat verify --network alfajores <RAFFLE-ADDRESS> <POAP-VERIFIER-ADDRESS>
+npx hardhat verify --network fuji --constructor-args raffleArgs.js <RAFFLE-ADDRESS>
 ```
 
-## Mainnet
+## MAINNET
 
-### Contract deployment
+### POAPVerifier contract deployment and verification
 ```bash
-npm run deploy:mainnet:poapverifier
+npm run mainnet:deploy:poapverifier
 npx hardhat verify --network celo --constructor-args poapVerifierArgs.js <POAP-VERIFIER-ADDRESS>
 ```
+
 ### Raffle contract
-> Before the Raffle contract deployment, take in account that the POAPVerifier contract must be finished. In order to put the contract at finished state you must register at least 6 users and execute the `finishRegistration()` function, after that you can deply de Raffle contract:
 
-```bash
-npm deploy:mainnet:raffle
-```
+#### Steps to create subscription and deploy the contract
+1. Coordinatior contract: execute createSuscription() and get subscriptionId from logs https://snowtrace.io/address/0xd5D517aBE5cF79B7e95eC98dB0f0277788aFF634/contract/43114/writeContract?chainid=43114
+2. Set env variables for Raffle contract
+3. Deploy raffle contract `npm testnet:deploy:raffle`
+4. Coordinatior contract: execute addConsumer(subId, raffleAddress)
+5, Link token contract: execute transferAndCall(coordinatorAddress, amount, abi.encode(subId)) amount: 1000000000000000000 (1 $LINK) https://snowtrace.io/address/0x5947BB275c521040051D82396192181b413227A3/contract/43114/writeContract?chainid=43114
+6. Raffle contract: execute electWinners()
 
-### Contracts verification
+#### Contract verification
 ```bash
-npx hardhat verify --network celo --constructor-args poapVerifierArgs.js <POAP-VERIFIER-ADDRESS>
-npx hardhat verify --network celo <RAFFLE-ADDRESS> <POAP-VERIFIER-ADDRESS>
+npx hardhat verify --network avalanche --constructor-args raffleArgs.js <RAFFLE-ADDRESS>
 ```
