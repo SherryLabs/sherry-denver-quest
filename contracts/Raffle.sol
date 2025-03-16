@@ -8,8 +8,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 contract Raffle is VRFConsumerBaseV2, Ownable {
     // Chainlink VRF variables
     VRFCoordinatorV2Interface public vrfCoordinator;
-    uint64 public subscriptionId;
-    uint32 callbackGasLimit = 200000;
+    uint256 public subscriptionId;
+    uint32 callbackGasLimit = 500000; // Increased from 200000 to 500000
     uint16 requestConfirmations = 3;
     uint8 numWords = 5; // select 5 winners
     bytes32 public keyHash;
@@ -26,6 +26,7 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
     event RandomnessRequested(uint256 requestId);
     event VerifiedUserAdded(address user);
     event VerifiedUsersBatchAdded(uint256 count);
+    event WinnersSelected(address[5] winners);
 
     modifier raffleNotEnded() {
         require(!raffleEnded, "Winners already selected");
@@ -120,6 +121,7 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
         }
 
         raffleEnded = true;
+        emit WinnersSelected(winners);
     }
 
     /**
