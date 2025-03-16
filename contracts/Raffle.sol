@@ -20,12 +20,22 @@ contract Raffle is VRFConsumerBaseV2Plus {
     mapping(uint16 => uint16) private swappedIndexes; // track swaps
 
     bool public raffleEnded;
-
+    
+    // Custom ownership implementation
+    address private _sherryOwner;
+    
     event RandomnessRequested(uint256 requestId);
     event VerifiedUserAdded(address user);
     event VerifiedUsersBatchAdded(uint256 count);
     event WinnersSelected(address[5] winners);
+    event SherryOwnershipChanged(address indexed previousOwner, address indexed newOwner);
 
+    // Custom modifier that works with our ownership model
+    modifier onlySherryOwner() {
+        require(_sherryOwner == msg.sender, "Caller is not the sherry owner");
+        _;
+    }
+    
     modifier raffleNotEnded() {
         require(!raffleEnded, "Winners already selected");
         _;
@@ -35,16 +45,35 @@ contract Raffle is VRFConsumerBaseV2Plus {
         address vrfCoordinator,
         uint256 subscriptionId,
         bytes32 keyHash
-    ) VRFConsumerBaseV2Plus(vrfCoordinator)  {
+    ) VRFConsumerBaseV2Plus(vrfCoordinator) {
         s_subscriptionId = subscriptionId;
         s_keyHash = keyHash;
+        _sherryOwner = msg.sender;
+        emit SherryOwnershipChanged(address(0), msg.sender);
     }
-
+    
+    /**
+     * @dev Returns the address of the current owner.
+     */
+    function raffleOwner() public view returns (address) {
+        return _sherryOwner;
+    }
+    
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     */
+    function changeSherryOwner(address newOwner) public virtual onlySherryOwner {
+        require(newOwner != address(0), "New owner is the zero address");
+        address oldOwner = _sherryOwner;
+        _sherryOwner = newOwner;
+        emit SherryOwnershipChanged(oldOwner, newOwner);
+    }
+    
     /**
      * @dev Add a verified user address to the contract.
      * @param user Address of the verified user.
      */
-    function addVerifiedUser(address user) external onlyOwner raffleNotEnded {
+    function addVerifiedUser(address user) external onlySherryOwner raffleNotEnded {
         require(!isVerified[user], "User already verified");
         verifiedUsers.push(user);
         isVerified[user] = true;
@@ -57,7 +86,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
      */
     function addVerifiedUsersBatch(
         address[] calldata users
-    ) external onlyOwner raffleNotEnded {
+    ) external onlySherryOwner raffleNotEnded {
         for (uint i = 0; i < users.length; i++) {
             if (!isVerified[users[i]]) {
                 verifiedUsers.push(users[i]);
@@ -70,7 +99,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     /**
      * @dev Request random numbers from Chainlink VRF to select winners.
      */
-    function selectWinners() external onlyOwner raffleNotEnded {
+    function selectWinners() external onlySherryOwner raffleNotEnded {
         require(verifiedUsers.length > 5, "Not enough verified users");
 
         // Request random words 

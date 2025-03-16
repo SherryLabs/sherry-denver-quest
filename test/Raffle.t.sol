@@ -56,6 +56,7 @@ contract RaffleTest is Test {
     event RandomnessRequested(uint256 requestId);
     event VerifiedUserAdded(address user);
     event VerifiedUsersBatchAdded(uint256 count);
+    event SherryOwnershipChanged(address indexed previousOwner, address indexed newOwner); // Updated event
 
     function setUp() public {
         // Deploy VRF
@@ -71,7 +72,7 @@ contract RaffleTest is Test {
 
         // Transfer ownership to the owner
         vm.prank(address(this));
-        raffle.transferOwnership(owner);
+        raffle.changeSherryOwner(owner); // Updated function name
 
         // Create test addresses
         for (uint i = 0; i < 10; i++) {
