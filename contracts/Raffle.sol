@@ -1,19 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import "@chainlink/contracts/src/v0.8/vrf/interfaces/VRFCoordinatorV2Interface.sol";
-import "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {VRFConsumerBaseV2Plus} from "@chainlink/contracts/src/v0.8/vrf/dev/VRFConsumerBaseV2Plus.sol";
+import {VRFV2PlusClient} from "@chainlink/contracts/src/v0.8/vrf/dev/libraries/VRFV2PlusClient.sol";
 
-contract Raffle is VRFConsumerBaseV2, Ownable {
+contract Raffle is VRFConsumerBaseV2Plus {
     // Chainlink VRF variables
-    VRFCoordinatorV2Interface public vrfCoordinator;
-    uint256 public subscriptionId;
-    uint32 callbackGasLimit = 500000; // Increased from 200000 to 500000
+    uint256 public s_subscriptionId;
+    bytes32 public s_keyHash;
+    uint32 callbackGasLimit = 500000; // Increased for our needs
     uint16 requestConfirmations = 3;
-    uint8 numWords = 5; // select 5 winners
-    bytes32 public keyHash;
-    uint256 public requestId;
+    uint32 numWords = 5; // select 5 winners
+    uint256 public s_requestId;
 
     // User and winner tracking
     address[] public verifiedUsers;
@@ -34,13 +32,12 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
     }
 
     constructor(
-        address _vrfCoordinator,
-        uint64 _subscriptionId,
-        bytes32 _keyHash
-    ) VRFConsumerBaseV2(_vrfCoordinator) Ownable(msg.sender) {
-        vrfCoordinator = VRFCoordinatorV2Interface(_vrfCoordinator);
-        subscriptionId = _subscriptionId;
-        keyHash = _keyHash;
+        address vrfCoordinator,
+        uint256 subscriptionId,
+        bytes32 keyHash
+    ) VRFConsumerBaseV2Plus(vrfCoordinator)  {
+        s_subscriptionId = subscriptionId;
+        s_keyHash = keyHash;
     }
 
     /**
@@ -58,7 +55,9 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
      * @dev Add multiple verified user addresses to the contract.
      * @param users Array of verified user addresses.
      */
-    function addVerifiedUsersBatch(address[] calldata users) external onlyOwner raffleNotEnded {
+    function addVerifiedUsersBatch(
+        address[] calldata users
+    ) external onlyOwner raffleNotEnded {
         for (uint i = 0; i < users.length; i++) {
             if (!isVerified[users[i]]) {
                 verifiedUsers.push(users[i]);
@@ -73,35 +72,40 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
      */
     function selectWinners() external onlyOwner raffleNotEnded {
         require(verifiedUsers.length > 5, "Not enough verified users");
-        
-        // Request random numbers from Chainlink VRF
-        requestId = vrfCoordinator.requestRandomWords(
-            keyHash,
-            subscriptionId,
-            requestConfirmations,
-            callbackGasLimit,
-            numWords
+
+        // Request random words 
+        s_requestId = s_vrfCoordinator.requestRandomWords(
+            VRFV2PlusClient.RandomWordsRequest({
+                keyHash: s_keyHash,
+                subId: s_subscriptionId,
+                requestConfirmations: requestConfirmations,
+                callbackGasLimit: callbackGasLimit,
+                numWords: numWords,
+                extraArgs: VRFV2PlusClient._argsToBytes(
+                    VRFV2PlusClient.ExtraArgsV1({nativePayment: false})
+                )
+            })
         );
 
-        emit RandomnessRequested(requestId);
+        emit RandomnessRequested(s_requestId);
     }
 
     /**
      * @dev Callback function that Chainlink VRF calls with the random numbers.
-     * @param _requestId The ID of the request.
-     * @param _randomWords The random numbers generated.
+     * @param requestId The ID of the request.
+     * @param randomWords The random numbers generated.
      */
     function fulfillRandomWords(
-        uint256 _requestId,
-        uint256[] memory _randomWords
+        uint256 requestId,
+        uint256[] calldata randomWords
     ) internal override raffleNotEnded {
-        require(requestId == _requestId, "Invalid request ID");
+        require(s_requestId == requestId, "Invalid request ID");
 
         uint16 userCount = uint16(verifiedUsers.length); // Total users
         uint16 available = userCount; // Users left to pick
 
         for (uint16 i = 0; i < 5; i++) {
-            uint16 randIndex = uint16(_randomWords[i] % available);
+            uint16 randIndex = uint16(randomWords[i] % available);
 
             // Get actual index (check if it was swapped)
             uint16 selectedIndex = swappedIndexes[randIndex] == 0
@@ -130,21 +134,21 @@ contract Raffle is VRFConsumerBaseV2, Ownable {
     function getWinners() external view returns (address[5] memory) {
         return winners;
     }
-    
+
     /**
      * @dev Returns the total number of verified users.
      */
     function getVerifiedUsersCount() external view returns (uint256) {
         return verifiedUsers.length;
     }
-    
+
     /**
      * @dev Check if an address is a verified user.
      */
     function isUserVerified(address user) external view returns (bool) {
         return isVerified[user];
     }
-    
+
     /**
      * @dev Returns all verified user addresses.
      */

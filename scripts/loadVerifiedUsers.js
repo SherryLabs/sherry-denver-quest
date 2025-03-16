@@ -6,7 +6,8 @@ async function main() {
   // Get the Raffle contract
   const Raffle = await ethers.getContractFactory('Raffle');
   
-  const raffleAddress = '0x';
+  // Replace with your deployed contract address
+  const raffleAddress = '0x'; // TODO: Replace with actual deployed contract address
   const raffle = await Raffle.attach(raffleAddress);
   
   // Read the verified users JSON file
@@ -16,14 +17,13 @@ async function main() {
   console.log(`Loading ${verifiedUsers.length} verified users to the contract...`);
   
   // Load in batches to avoid gas limits 
-  // @dev  note :  adjust batch size as needed
   const batchSize = 100;
   for (let i = 0; i < verifiedUsers.length; i += batchSize) {
     const batch = verifiedUsers.slice(i, i + batchSize);
     const tx = await raffle.addVerifiedUsersBatch(batch);
-    console.log(`Batch ${i/batchSize + 1} transaction hash: ${tx.hash}`);
+    console.log(`Batch ${Math.floor(i/batchSize) + 1} transaction hash: ${tx.hash}`);
     await tx.wait();
-    console.log(`Batch ${i/batchSize + 1} confirmed. Added ${batch.length} users.`);
+    console.log(`Batch ${Math.floor(i/batchSize) + 1} confirmed. Added ${batch.length} users.`);
   }
   
   const totalUsers = await raffle.getVerifiedUsersCount();
