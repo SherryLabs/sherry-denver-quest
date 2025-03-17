@@ -5,7 +5,7 @@
 | Contract | Network | Address |
 |----------|---------|---------|
 | POAPVerifier | Celo Mainnet | [0x3449afc2fCF3D51DC892658f0c69E47286B078d4](https://celoscan.io/address/0x3449afc2fcf3d51dc892658f0c69e47286b078d4/advanced#readContract) |
-| Raffle | Avalanche C-Chain |  |
+| Raffle | Avalanche C-Chain |  [0x2e3b71cF183657582F03c44F35fECF235677C1ED](https://snowtrace.io/address/0x2e3b71cF183657582F03c44F35fECF235677C1ED)|
 
 ## Installation
 
