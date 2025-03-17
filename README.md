@@ -1,5 +1,12 @@
 # POAPs Denver Quest
 
+## Contract Addresses
+
+| Contract | Network | Address |
+|----------|---------|---------|
+| POAPVerifier | Celo Mainnet | [0x3449afc2fCF3D51DC892658f0c69E47286B078d4](https://celoscan.io/address/0x3449afc2fcf3d51dc892658f0c69e47286b078d4/advanced#readContract) |
+| Raffle | Avalanche C-Chain |  |
+
 ## Installation
 
 ### Install dependencies

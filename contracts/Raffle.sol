@@ -8,7 +8,7 @@ contract Raffle is VRFConsumerBaseV2Plus {
     // Chainlink VRF variables
     uint256 public s_subscriptionId;
     bytes32 public s_keyHash;
-    uint32 callbackGasLimit = 500000; // Increased for our needs
+    uint32 public callbackGasLimit = 1000000; // Increased for Avalanche - was 500000
     uint16 requestConfirmations = 3;
     uint32 numWords = 5; // select 5 winners
     uint256 public s_requestId;
@@ -29,6 +29,8 @@ contract Raffle is VRFConsumerBaseV2Plus {
     event VerifiedUsersBatchAdded(uint256 count);
     event WinnersSelected(address[5] winners);
     event SherryOwnershipChanged(address indexed previousOwner, address indexed newOwner);
+    event KeyHashChanged(bytes32 oldKeyHash, bytes32 newKeyHash);
+    event CallbackGasLimitChanged(uint32 oldLimit, uint32 newLimit);
 
     // Custom modifier that works with our ownership model
     modifier onlySherryOwner() {
@@ -67,6 +69,32 @@ contract Raffle is VRFConsumerBaseV2Plus {
         address oldOwner = _sherryOwner;
         _sherryOwner = newOwner;
         emit SherryOwnershipChanged(oldOwner, newOwner);
+    }
+    
+    /**
+     * @dev Update the key hash used for VRF requests
+     * This can be useful if we need to change price tiers or fix configuration issues
+     * @param newKeyHash The new key hash to use for VRF requests
+     */
+    function updateKeyHash(bytes32 newKeyHash) external onlySherryOwner raffleNotEnded {
+        require(newKeyHash != 0, "Invalid key hash");
+        bytes32 oldKeyHash = s_keyHash;
+        s_keyHash = newKeyHash;
+        emit KeyHashChanged(oldKeyHash, newKeyHash);
+    }
+    
+    /**
+     * @dev Update the callback gas limit for VRF requests
+     * This is useful for adjusting gas based on network conditions or request complexity
+     * @param newLimit The new callback gas limit to use
+     */
+    function updateCallbackGasLimit(uint32 newLimit) external onlySherryOwner raffleNotEnded {
+        require(newLimit >= 200000, "Gas limit too low");
+        require(newLimit <= 5000000, "Gas limit too high");
+        
+        uint32 oldLimit = callbackGasLimit;
+        callbackGasLimit = newLimit;
+        emit CallbackGasLimitChanged(oldLimit, newLimit);
     }
     
     /**
